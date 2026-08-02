@@ -23,6 +23,7 @@ Output:
 """
 
 import os
+import re
 import csv
 import argparse
 from PIL import Image
@@ -81,8 +82,13 @@ def main():
     forged_files = [f for f in os.listdir(forged_dir) if f.lower().endswith((".jpg", ".jpeg", ".png"))]
     print(f"Processing {len(forged_files)} AI-forged images from {args.forged_folder}...")
     for fname in forged_files:
-        base = os.path.splitext(fname)[0]  # numeric id, e.g. "39406"
-        mask_fname = f"{base}_mask.png"
+        base = os.path.splitext(fname)[0]  # e.g. "39406_0"
+        # Forged filenames have a "_0"/"_1"/"_2" variant suffix; the mask
+        # is shared across all variants of the same source image, so we
+        # strip that suffix to get the source id, e.g. "39406_0" -> "39406"
+        match = re.match(r"^(\d+)_\d+$", base)
+        source_id = match.group(1) if match else base
+        mask_fname = f"{source_id}_mask.png"
         mask_path = os.path.join(mask_dir, mask_fname)
 
         if not os.path.exists(mask_path):
