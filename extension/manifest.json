@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Image Authenticity Checker",
+  "version": "0.1.0",
+  "description": "Right-click any image to check if it's real, Photoshop-edited, or AI-edited.",
+  "permissions": ["contextMenus", "activeTab", "scripting"],
+  "host_permissions": ["http://localhost:8000/*", "http://127.0.0.1:8000/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["overlay.css"]
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Image Authenticity Checker"
+  },
+  "icons": {
+    "48": "icon48.png"
+  }
+}
