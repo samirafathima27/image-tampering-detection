@@ -16,6 +16,7 @@ Usage:
 """
 
 import os
+import uuid
 import numpy as np
 from PIL import Image, ImageChops
 
@@ -34,12 +35,18 @@ def generate_ela(image_path: str, quality: int = 90, scale: int = 15) -> np.ndar
     """
     original = Image.open(image_path).convert("RGB")
 
-    tmp_path = "_ela_tmp.jpg"
+    # Use a unique temp filename per call (pid + uuid) so this is safe to call
+    # from multiple parallel DataLoader worker processes at once — a shared
+    # hardcoded filename causes race conditions (one worker deletes the file
+    # while another is still writing/reading it).
+    tmp_path = f"_ela_tmp_{os.getpid()}_{uuid.uuid4().hex}.jpg"
     original.save(tmp_path, "JPEG", quality=quality)
-    resaved = Image.open(tmp_path)
-
-    diff = ImageChops.difference(original, resaved)
-    os.remove(tmp_path)
+    try:
+        resaved = Image.open(tmp_path)
+        diff = ImageChops.difference(original, resaved)
+    finally:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
 
     diff_arr = np.array(diff).astype(np.float32)
 
