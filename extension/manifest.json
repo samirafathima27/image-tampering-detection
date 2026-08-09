@@ -18,8 +18,5 @@
   "action": {
     "default_popup": "popup.html",
     "default_title": "Image Authenticity Checker"
-  },
-  "icons": {
-    "48": "icon48.png"
   }
 }
