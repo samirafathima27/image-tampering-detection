@@ -28,6 +28,7 @@ import os
 import sys
 import csv
 import time
+import shutil
 import argparse
 
 import numpy as np
@@ -160,6 +161,20 @@ def train(args):
             torch.save(model.state_dict(), ckpt_path)
             print(f"  -> saved new best checkpoint to {ckpt_path}")
 
+        # Always save the latest epoch's weights too (separate from "best"),
+        # and optionally mirror both to Drive immediately, so a dropped
+        # Colab session never loses more than the current epoch's progress.
+        latest_path = os.path.join(args.checkpoint_dir, "latest_model.pt")
+        torch.save(model.state_dict(), latest_path)
+
+        if args.drive_backup_dir:
+            os.makedirs(args.drive_backup_dir, exist_ok=True)
+            if os.path.exists(os.path.join(args.checkpoint_dir, "best_model.pt")):
+                shutil.copy2(os.path.join(args.checkpoint_dir, "best_model.pt"),
+                             os.path.join(args.drive_backup_dir, "best_model.pt"))
+            shutil.copy2(latest_path, os.path.join(args.drive_backup_dir, "latest_model.pt"))
+            print(f"  -> backed up checkpoints to {args.drive_backup_dir}")
+
     if args.quick_test:
         print("\nQuick test complete. If this ran without errors, the pipeline works.")
         print("Now run again WITHOUT --quick_test for full training.")
@@ -174,6 +189,8 @@ if __name__ == "__main__":
     parser.add_argument("--epochs", type=int, default=20)
     parser.add_argument("--batch_size", type=int, default=16)
     parser.add_argument("--num_workers", type=int, default=2)
+    parser.add_argument("--drive_backup_dir", default=None,
+                         help="If set, copies checkpoints here after every epoch (e.g. a Drive path) so progress survives a dropped Colab session")
     parser.add_argument("--quick_test", action="store_true",
                          help="Run on a small subset for 2 epochs to verify the pipeline works")
     args = parser.parse_args()
